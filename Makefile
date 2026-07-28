@@ -95,6 +95,11 @@ configure:
 				grep -qxF "$$entry" $$conf_file || echo "$$entry" | sudo tee -a $$conf_file > /dev/null; \
 			done; \
 		fi; \
+		pp="/sys/firmware/acpi/platform_profile"; \
+		if [ -e "$$pp" ]; then \
+			entry="f $$pp 0660 root $(MODNAME)"; \
+			grep -qxF "$$entry" $$conf_file || echo "$$entry" | sudo tee -a $$conf_file > /dev/null; \
+		fi; \
 		sudo systemd-tmpfiles --create $$conf_file; \
 	else \
 		echo "Warning: Could not detect predator_sense or nitro_sense in sysfs."; \
