@@ -1,10 +1,19 @@
 [Unit]
-Description=Unload linuwu_sense at shutdown
+Description=Apply linuwu_sense sysfs permissions, and unload the module at shutdown
+After=systemd-modules-load.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStop=/sbin/rmmod linuwu_sense 
+# systemd-tmpfiles-setup.service carries no ordering guarantee against
+# systemd-modules-load.service, so on boot it can run before linuwu_sense is
+# loaded, find none of the sysfs nodes it is meant to chgrp, and silently leave
+# every control root-only. Anything driving this driver as a non-root member of
+# the linuwu_sense group then breaks after a reboot, with no visible error.
+# Re-apply the rules here, once the module is guaranteed to be present.
+ExecStartPre=/usr/sbin/modprobe linuwu_sense
+ExecStart=/usr/bin/systemd-tmpfiles --create /etc/tmpfiles.d/linuwu_sense.conf
+ExecStop=/usr/sbin/rmmod linuwu_sense
 
 [Install]
 WantedBy=multi-user.target
