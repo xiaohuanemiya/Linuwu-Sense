@@ -55,6 +55,9 @@ install: all
 # own target so the two paths cannot drift apart: everything after the .ko is in
 # place is identical either way.
 configure:
+	@# Drop any previously loaded build first, otherwise the modprobe below is a
+	@# no-op and a reinstall or DKMS upgrade silently keeps running the old .ko.
+	@sudo rmmod $(MODNAME) 2>/dev/null || true
 	@sudo rmmod acer_wmi 2>/dev/null || true
 	@echo "blacklist acer_wmi" | sudo tee /etc/modprobe.d/blacklist-acer_wmi.conf > /dev/null
 	@echo "$(MODNAME)" | sudo tee /etc/modules-load.d/$(MODNAME).conf > /dev/null
