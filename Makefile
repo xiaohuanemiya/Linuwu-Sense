@@ -63,10 +63,6 @@ configure:
 	@echo "$(MODNAME)" | sudo tee /etc/modules-load.d/$(MODNAME).conf > /dev/null
 	sudo modprobe $(MODNAME)
 	@sleep 2
-	@sudo cp linuwu_sense.service /etc/systemd/system/
-	@sudo systemctl daemon-reload
-	@sudo systemctl enable linuwu_sense.service
-	@sudo systemctl start linuwu_sense.service
 	@echo "Setting up group and permissions..."
 	@echo "Detected user: $(REAL_USER)"
 	@if ! getent group linuwu_sense >/dev/null; then \
@@ -104,6 +100,14 @@ configure:
 	else \
 		echo "Warning: Could not detect predator_sense or nitro_sense in sysfs."; \
 	fi
+	@# Only now install the unit. Its ExecStart runs systemd-tmpfiles against
+	@# the file generated just above, and systemd-tmpfiles exits non-zero on a
+	@# missing config -- so starting the unit any earlier fails the whole target
+	@# on a clean machine, before the group and the tmpfiles rules exist.
+	@sudo cp linuwu_sense.service /etc/systemd/system/
+	@sudo systemctl daemon-reload
+	@sudo systemctl enable linuwu_sense.service
+	@sudo systemctl start linuwu_sense.service
 	@echo "Module $(MODNAME) installed and configured to load at boot."
 
 # Reverses configure. Split out for the same reason.
