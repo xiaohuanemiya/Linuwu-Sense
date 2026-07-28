@@ -152,6 +152,14 @@ dkms-install: check-dkms-ver
 	sudo dkms add -m $(DKMS_NAME) -v $(DKMS_VER)
 	sudo dkms build -m $(DKMS_NAME) -v $(DKMS_VER)
 	sudo dkms install -m $(DKMS_NAME) -v $(DKMS_VER)
+	@# The initramfs carries its own copy of the module and loads it ~1s into
+	@# boot, well before systemd-modules-load, which makes the later modprobe a
+	@# no-op. dkms(8) never refreshes the initramfs on a manual install (grep it
+	@# for update-initramfs: zero hits), so without this the freshly built module
+	@# is shadowed by whatever the last initrd rebuild happened to capture, and
+	@# the stale build silently runs until the next kernel upgrade. Kernel
+	@# upgrades are already safe: /etc/kernel/postinst.d runs dkms before dracut.
+	sudo update-initramfs -u
 	@$(MAKE) --no-print-directory configure
 	@echo "DKMS install complete -- the module will rebuild itself on kernel upgrades."
 
@@ -160,6 +168,9 @@ dkms-uninstall: check-dkms-ver
 	@sudo dkms remove -m $(DKMS_NAME) -v $(DKMS_VER) --all 2>/dev/null || true
 	sudo rm -rf $(DKMS_SRC)
 	@sudo depmod -a
+	@# Otherwise the copy inside the initramfs keeps loading the module at every
+	@# boot even though it is no longer installed anywhere on disk.
+	sudo update-initramfs -u
 	@echo "Removed $(DKMS_NAME) from DKMS."
 
 dkms-status:
