@@ -4277,7 +4277,24 @@ static const enum acer_wmi_predator_v4_sensor_id acer_wmi_fan_channel_to_sensor_
     [0] = ACER_WMID_SENSOR_CPU_FAN_SPEED,
     [1] = ACER_WMID_SENSOR_GPU_FAN_SPEED,
 };
- 
+
+/*
+ * Without labels every consumer has to hardcode the channel order to tell the
+ * sensors apart, which breaks as soon as the hwmon numbering shifts. Channel 2
+ * is what the EC calls "external temperature 2"; it tracks chassis heat soak
+ * rather than either die, hence "System".
+ */
+static const char *const acer_wmi_temp_channel_labels[] = {
+    [0] = "CPU",
+    [1] = "GPU",
+    [2] = "System",
+};
+
+static const char *const acer_wmi_fan_channel_labels[] = {
+    [0] = "CPU Fan",
+    [1] = "GPU Fan",
+};
+
  static umode_t acer_wmi_hwmon_is_visible(const void *data,
                       enum hwmon_sensor_types type, u32 attr,
                       int channel)
@@ -4334,23 +4351,46 @@ static const enum acer_wmi_predator_v4_sensor_id acer_wmi_fan_channel_to_sensor_
      default:
          return -EOPNOTSUPP;
      }
- } 
- 
+ }
+
+ static int acer_wmi_hwmon_read_string(struct device *dev,
+                       enum hwmon_sensor_types type, u32 attr,
+                       int channel, const char **str)
+ {
+     switch (type) {
+     case hwmon_temp:
+         if (attr != hwmon_temp_label)
+             return -EOPNOTSUPP;
+
+         *str = acer_wmi_temp_channel_labels[channel];
+         return 0;
+     case hwmon_fan:
+         if (attr != hwmon_fan_label)
+             return -EOPNOTSUPP;
+
+         *str = acer_wmi_fan_channel_labels[channel];
+         return 0;
+     default:
+         return -EOPNOTSUPP;
+     }
+ }
+
  static const struct hwmon_channel_info *const acer_wmi_hwmon_info[] = {
      HWMON_CHANNEL_INFO(temp,
-                HWMON_T_INPUT,
-                HWMON_T_INPUT,
-                HWMON_T_INPUT
+                HWMON_T_INPUT | HWMON_T_LABEL,
+                HWMON_T_INPUT | HWMON_T_LABEL,
+                HWMON_T_INPUT | HWMON_T_LABEL
                 ),
      HWMON_CHANNEL_INFO(fan,
-                HWMON_F_INPUT,
-                HWMON_F_INPUT
+                HWMON_F_INPUT | HWMON_F_LABEL,
+                HWMON_F_INPUT | HWMON_F_LABEL
                 ),
      NULL
  };
- 
+
  static const struct hwmon_ops acer_wmi_hwmon_ops = {
      .read = acer_wmi_hwmon_read,
+     .read_string = acer_wmi_hwmon_read_string,
      .is_visible = acer_wmi_hwmon_is_visible,
  };
  
