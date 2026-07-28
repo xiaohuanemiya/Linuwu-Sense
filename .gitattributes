@@ -1,0 +1,13 @@
+# This tree is built and installed on Linux, but edited on Windows where
+# core.autocrlf=true is set globally. Without this file, checkout rewrites
+# everything as CRLF, which produces a systemd unit whose ExecStart carries a
+# trailing carriage return and Makefile recipes that fail with $'\r': command
+# not found. Pin every text file to LF regardless of platform.
+* text=auto eol=lf
+
+*.c        text eol=lf
+*.h        text eol=lf
+Makefile   text eol=lf
+dkms.conf  text eol=lf
+*.service  text eol=lf
+*.md       text eol=lf

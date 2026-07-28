@@ -40,7 +40,14 @@
  MODULE_AUTHOR("Carlos Corbacho");
  MODULE_DESCRIPTION("Acer Laptop WMI Extras Driver");
  MODULE_LICENSE("GPL");
- 
+
+ /*
+  * Reported through the read-only "version" sysfs node. Div Acer Manager Max
+  * reads that node to show which driver build is running; without it DAMX just
+  * displays "Unknown Version".
+  */
+ #define DRIVER_VERSION "1.0.0-phn16-71"
+
  /*
   * Magic Number
   * Meaning is unknown - this number is required for writing to ACPI for AMW0
@@ -3600,7 +3607,14 @@ enum acer_wmi_predator_v4_oc {
  static struct device_attribute battery_limiter = __ATTR(battery_limiter, 0644, predator_battery_limit_show, predator_battery_limit_store);
  static struct device_attribute fan_speed = __ATTR(fan_speed, 0644, predator_fan_speed_show, predator_fan_speed_store);
  static struct device_attribute lcd_override = __ATTR(lcd_override, 0644, predator_lcd_override_show, predator_lcd_override_store);
+ static ssize_t version_show(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+     return sysfs_emit(buf, "%s\n", DRIVER_VERSION);
+ }
+ static DEVICE_ATTR_RO(version);
+
  static struct attribute *predator_sense_attrs[] = {
+     &dev_attr_version.attr,
      &lcd_override.attr,
      &fan_speed.attr,
      &battery_limiter.attr,
@@ -3621,6 +3635,7 @@ enum acer_wmi_predator_v4_oc {
  
  /* nitro sense attributes */
  static struct attribute *nitro_sense_attrs[] = {
+     &dev_attr_version.attr,
      &fan_speed.attr,
      &battery_limiter.attr,
      &battery_calibration.attr,
